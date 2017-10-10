@@ -10,75 +10,74 @@
 //!
 //! ```rust,no_run
 //! extern crate r2d2;
-//! extern crate r2d2_sqlite;
-//! extern crate rusqlite;
+//! extern crate r2d2_sqlite3;
+//! extern crate sqlite;
 //!
 //! use std::thread;
-//! use r2d2_sqlite::SqliteConnectionManager;
+//! use r2d2_sqlite3::SqliteConnectionManager;
 //!
 //! fn main() {
 //!     let config = r2d2::Config::default();
-//!     let manager = SqliteConnectionManager::new("file.db");
+//!     let manager = SqliteConnectionManager::file("file.db").unwrap();
 //!     let pool = r2d2::Pool::new(config, manager).unwrap();
 //!
 //!     for i in 0..10i32 {
 //!         let pool = pool.clone();
 //!         thread::spawn(move || {
 //!             let conn = pool.get().unwrap();
-//!             conn.execute("INSERT INTO foo (bar) VALUES (?)", &[&i]).unwrap();
+//!             let mut stmt = conn.prepare("INSERT INTO foo (bar) VALUES (?)").unwrap();
+//!             stmt.bind(1, 42).unwrap();
 //!         });
 //!     }
 //! }
 //! ```
 extern crate r2d2;
-extern crate rusqlite;
+extern crate sqlite;
 
 
-use rusqlite::{Connection, Error, OpenFlags};
-use std::path::{Path, PathBuf};
+use sqlite::{Connection, Error};
+use std::path::{Path,PathBuf};
+use std::io;
+use std::fs::OpenOptions;
 
 
 
 enum ConnectionConfig {
-    File(PathBuf, OpenFlags),
+    File(PathBuf),
+    Memory,
 }
 
 /// An `r2d2::ManageConnection` for `rusqlite::Connection`s.
-pub struct SqliteConnectionManager {
-    config: ConnectionConfig,
-}
+pub struct SqliteConnectionManager(ConnectionConfig);
 
 impl SqliteConnectionManager {
     /// Creates a new `SqliteConnectionManager` from file.
     ///
-    /// See `rusqlite::Connection::open`
-    pub fn new<P: AsRef<Path>>(path: P) -> Self {
-        Self::new_with_flags(path, OpenFlags::default())
+    pub fn file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        OpenOptions::new().read(true).open(path.as_ref())?; 
+        Ok(SqliteConnectionManager(
+            ConnectionConfig::File(path.as_ref().to_path_buf())))
     }
 
-    /// Creates a new `SqliteConnectionManager` from file with open flags.
-    ///
-    /// See `rusqlite::Connection::open_with_flags`
-    pub fn new_with_flags<P: AsRef<Path>>(path: P, flags: OpenFlags) -> Self {
-        SqliteConnectionManager {
-            config: ConnectionConfig::File(path.as_ref().to_path_buf(), flags),
-        }
+    pub fn memory() -> io::Result<Self> {
+        Ok(SqliteConnectionManager(ConnectionConfig::Memory))
     }
+
 }
 
 impl r2d2::ManageConnection for SqliteConnectionManager {
     type Connection = Connection;
-    type Error = rusqlite::Error;
+    type Error = sqlite::Error;
 
     fn connect(&self) -> Result<Connection, Error> {
-        match self.config {
-                ConnectionConfig::File(ref path, flags) => Connection::open_with_flags(path, flags),
-            }
-            .map_err(Into::into)
+        match self.0{
+            ConnectionConfig::File(ref path) => Connection::open(path),
+            ConnectionConfig::Memory => Connection::open(":memory:")
+        }
     }
 
     fn is_valid(&self, conn: &mut Connection) -> Result<(), Error> {
-        conn.execute_batch("").map_err(Into::into)
+        conn.execute("").map_err(Into::into)
     }
 
     fn has_broken(&self, _: &mut Connection) -> bool {
