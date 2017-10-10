@@ -18,7 +18,7 @@
 //!
 //! fn main() {
 //!     let config = r2d2::Config::default();
-//!     let manager = SqliteConnectionManager::file("file.db").unwrap();
+//!     let manager = SqliteConnectionManager::file("file.db");
 //!     let pool = r2d2::Pool::new(config, manager).unwrap();
 //!
 //!     for i in 0..10i32 {
@@ -37,8 +37,6 @@ extern crate sqlite;
 
 use sqlite::{Connection, Error};
 use std::path::{Path,PathBuf};
-use std::io;
-use std::fs::OpenOptions;
 
 
 
@@ -53,14 +51,13 @@ pub struct SqliteConnectionManager(ConnectionConfig);
 impl SqliteConnectionManager {
     /// Creates a new `SqliteConnectionManager` from file.
     ///
-    pub fn file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        OpenOptions::new().read(true).open(path.as_ref())?; 
-        Ok(SqliteConnectionManager(
-            ConnectionConfig::File(path.as_ref().to_path_buf())))
+    pub fn file<P: AsRef<Path>>(path: P) -> Self {
+        SqliteConnectionManager(
+            ConnectionConfig::File(path.as_ref().to_path_buf()))
     }
 
-    pub fn memory() -> io::Result<Self> {
-        Ok(SqliteConnectionManager(ConnectionConfig::Memory))
+    pub fn memory() -> Self {
+        SqliteConnectionManager(ConnectionConfig::Memory)
     }
 
 }

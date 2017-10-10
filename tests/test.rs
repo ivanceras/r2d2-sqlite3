@@ -14,7 +14,7 @@ use sqlite::Connection;
 
 #[test]
 fn test_basic() {
-    let manager = SqliteConnectionManager::file("file.db").unwrap();
+    let manager = SqliteConnectionManager::file("file.db");
     let config = r2d2::Config::builder().pool_size(2).build();
     let pool = r2d2::Pool::new(config, manager).unwrap();
 
@@ -45,7 +45,7 @@ fn test_basic() {
 
 #[test]
 fn test_file() {
-    let manager = SqliteConnectionManager::file("file.db").unwrap();
+    let manager = SqliteConnectionManager::file("file.db");
     let config = r2d2::Config::builder().pool_size(2).build();
     let pool = r2d2::Pool::new(config, manager).unwrap();
 
@@ -77,7 +77,7 @@ fn test_file() {
 
 #[test]
 fn test_is_valid() {
-    let manager = SqliteConnectionManager::file("file.db").unwrap();
+    let manager = SqliteConnectionManager::file("file.db");
     let config = r2d2::Config::builder()
         .pool_size(1)
         .test_on_check_out(true)
@@ -92,6 +92,6 @@ fn test_error_handling() {
     //! We specify a directory as a database. This is bound to fail.
     let dir = TempDir::new("r2d2-sqlite").expect("Could not create temporary directory");
     let dirpath = dir.path().to_str().unwrap();
-    let manager = SqliteConnectionManager::file(dirpath).unwrap();
+    let manager = SqliteConnectionManager::file(dirpath);
     assert!(manager.connect().is_err());
 }
