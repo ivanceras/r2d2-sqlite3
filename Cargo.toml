@@ -10,7 +10,7 @@ keywords = ["sqlite", "r2d2", "pool"]
 
 
 [dependencies]
-r2d2 = "0.7.4"
+r2d2 = "0.8"
 sqlite = {path = "../sqlite", version = "0.23.9"}
 
 [dev-dependencies]
