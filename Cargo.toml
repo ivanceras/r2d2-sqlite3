@@ -1,6 +1,6 @@
 [package]
 name = "r2d2-sqlite3"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jovansonlee Cesar<ivanceras@gmail.com>"]
 license = "MIT"
 description = "Sqlite support for the r2d2 connection pool"
@@ -11,7 +11,7 @@ keywords = ["sqlite", "r2d2", "pool"]
 
 [dependencies]
 r2d2 = "0.8"
-sqlite = {path = "../sqlite", version = "0.23.9"}
+sqlite3 = "0.24.0"
 
 [dev-dependencies]
 tempdir = "0.3"
