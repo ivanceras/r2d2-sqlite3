@@ -74,6 +74,38 @@ fn test_file() {
 }
 
 #[test]
+fn test_non_existent_file() {
+    let manager = SqliteConnectionManager::file("/tmp/file.db");
+    let pool = r2d2::Pool::builder().max_size(2).build(manager).unwrap();
+
+    let (s1, r1) = mpsc::channel();
+    let (s2, r2) = mpsc::channel();
+
+    let pool1 = pool.clone();
+    let t1 = thread::spawn(move || {
+        let conn = pool1.get().unwrap();
+        let conn1: &Connection = &*conn;
+        s1.send(()).unwrap();
+        conn.execute("CREATE TABLE users(id int, name text, email text)");
+        r2.recv().unwrap();
+        drop(conn1);
+    });
+
+    let pool2 = pool.clone();
+    let t2 = thread::spawn(move || {
+        let conn = pool2.get().unwrap();
+        s2.send(()).unwrap();
+        r1.recv().unwrap();
+        drop(conn);
+    });
+
+    t1.join().unwrap();
+    t2.join().unwrap();
+
+    pool.get().unwrap();
+}
+
+#[test]
 fn test_is_valid() {
     let manager = SqliteConnectionManager::file("file.db");
     let pool = r2d2::Pool::builder()
